@@ -19,3 +19,7 @@ Requirements:
 - Redis
 - Discord.py
 - other libraries you'll find in the files - nothing crazy
+
+Drawbacks / improvements:
+- Polling Gmail every [x] seconds (10 in my case) isn't ideal. You can set up push alerts via Google Cloud, but I couldn't be bothered
+- A never-ending loop in post_to_discord.py that checks for new Redis messages every [x] seconds (2 in my case) also isn't ideal, but is fine for me
