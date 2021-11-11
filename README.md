@@ -13,3 +13,9 @@ Workflow:
 9) Profit!
 
 Comments in the files explain what needs to be inserted where (channel ID, etc.)
+
+Requirements:
+- Python (I use 3.9)
+- Redis
+- Discord.py
+- other libraries you'll find in the files - nothing crazy
