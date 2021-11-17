@@ -3,7 +3,7 @@ Built for a use-case where I needed to post CME QuickStrike Block Trade alerts (
 
 Workflow:
 1) Sign up to CME using the link above (it's free) and select the asset types you want to receive alerts for
-2) Enable the Gmail APi via https://console.cloud.google.com, generate credentials.json, etc. (Google for detailed guides)
+2) Enable the Gmail APi via https://console.cloud.google.com, generate credentials.json, etc. (see section below for more details)
 3) Create a Discord bot via https://discord.com/developers (again, detailed guides available online)
 4) Install Redis (used to publish data between the email "poller" and the Discord bot)
 5) Set up a basic Redis installation
@@ -13,6 +13,12 @@ Workflow:
 9) Profit!
 
 Comments in the files explain what needs to be inserted where (channel ID, etc.)
+
+**Gmail APi "troubleshooting"**
+It took me a few tries to get the API working.
+
+This article is a good, quick overview: https://www.javatpoint.com/gmail-api-in-python
+If you are running the bot via a VPS, you will probably have issues getting the last step of the authorization to work. The following answer resolved this for me (in short, run the script locall the first time to generate a token file, then copy it over to your server): https://stackoverflow.com/questions/37201250/sending-email-via-gmail-python
 
 Requirements:
 - Python (I use 3.9)
