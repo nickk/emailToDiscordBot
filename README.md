@@ -18,7 +18,7 @@ Comments in the files explain what needs to be inserted where (channel ID, etc.)
 It took me a few tries to get the API working.
 
 This article is a good, quick overview: https://www.javatpoint.com/gmail-api-in-python
-If you are running the bot via a VPS, you will probably have issues getting the last step of the authorization to work. The following answer resolved this for me (in short, run the script locall the first time to generate a token file, then copy it over to your server): https://stackoverflow.com/questions/37201250/sending-email-via-gmail-python
+If you are running the bot via a VPS, you will probably have issues getting the last step of the authorization to work. The following answer resolved this for me (in short, run the script locally the first time to generate a token file, then copy it over to your server): https://stackoverflow.com/questions/37201250/sending-email-via-gmail-python
 
 Requirements:
 - Python (I use 3.9)
