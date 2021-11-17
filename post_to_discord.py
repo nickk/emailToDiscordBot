@@ -11,16 +11,16 @@ import pandas as pd
 from tabulate import tabulate
 
 
-# connect to Redis and subscribe to tradingview messages
 r = redis.Redis()
 p = r.pubsub()
 p.subscribe('tradingview')
 
-### INSERT YOUR BOT TOKEN HERE
-TOKEN = 'xxxx'
-bot = commands.Bot('!') 
+
+TOKEN = 'xxxxxxxxxxxxx' ################ ENTER BOT TOKEN HERE
+bot = commands.Bot('!') # ! = PREFIX
 
 # Change this to whatever seconds you want it to be
+# Or delete this line and change the x value into a number on the @tasks.loop param.
 x = 2
 
 @tasks.loop(seconds=x)
@@ -29,18 +29,21 @@ async def send():
     """Sends something every x seconds"""    
     
     message = p.get_message()
+    
     if message is not None and message['type'] == 'message':        
         rehydrated_df = pickle.loads(zlib.decompress(message['data']))
-
-        # due to the Discord 2000 character limit, I split the table into 10 rows each
+        print(rehydrated_df)
+        tit = rehydrated_df.iloc[:1,0].values[0]
+        rehydrated_df = rehydrated_df[1:]
+        
         tbls = []
         row_len = 10
         for i in range((len(rehydrated_df)//row_len)+1):
             tbls.append(tabulate(rehydrated_df.iloc[i*row_len:(i*row_len+row_len), :], headers='keys', tablefmt='psql', showindex=False, numalign="right"))
                 
-        channel = bot.get_channel(1010101010101) #INSER Channel ID HERE 
+        channel = bot.get_channel(99999999999999999) ################ ENTER BOT CHANNEL ID HERE
         for s in tbls:
-            await channel.send('```'+s+ '```')
+            await channel.send('```'+'*'+tit+'*'+"\n"+s+ '```')
 
 
 @send.before_loop

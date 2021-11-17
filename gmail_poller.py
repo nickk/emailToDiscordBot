@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+
 # importing os and pickle module in program  
 import os
 import pickle
@@ -34,37 +35,33 @@ import time
 import redis
 import pickle
 import zlib
+import numpy as np
+
 
 r = redis.Redis()
 p = r.pubsub()
 
 
-# Request all access from Gmail APIs and project  
-SCOPES = ['https://mail.google.com/']  # providing the scope for Gmail APIs
-OurEmailID = 'XXXX@gmail.com'  # INSERT YOUR GMAIL ADDRESS HERE
+SCOPES = ['https://mail.google.com/'] 
+OurEmailID = 'xxxxxxx@gmail.com'  ################ ENTER YOUR EMAIL ADDRESS HERE
 
 
-# using a default function to authenticate Gmail APIs
 def authenticateGmailAPIs():
-    creds = None
-    # authorizing the Gmail APIs with tokens of pickles  
-    if os.path.exists("token.pickle"):  # using if else statement
+    creds = None    
+    if os.path.exists("token.pickle"): 
         with open("token.pickle", "rb") as token:
             creds = pickle.load(token)
-            # if there are no valid credentials available in device, we will let the user sign in manually
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            # INSERT YOUR CREDENTIAL FILE NAME HERE
             flow = InstalledAppFlow.from_client_secrets_file(
-                'client_secret_XXXXXX.apps.googleusercontent.com-1.json',
-                SCOPES)  # downloaded credential name
-            creds = flow.run_local_server(port=0)  # running credentials
-        # save the credentials for the next run  
+                'xxxxxx.apps.googleusercontent.com.json', ################ ENTER YOUR JSON CREDENTIALS FILE LOCATION HERE
+                SCOPES)
+            creds = flow.run_local_server(port=0)         
         with open("token.pickle", "wb") as token:
             pickle.dump(creds, token)
-    return build('gmail', 'v1', credentials=creds)  # using Gmail to authenticate
+    return build('gmail', 'v1', credentials=creds)
 
 
 # Get the Gmail API service by calling the function
@@ -146,17 +143,16 @@ def get_mime_message(service, user_id, msg_id):
     try:
         message = service.users().messages().get(userId=user_id, id=msg_id,
                                              format='raw').execute()
-        
+        #print('Message snippet: %s' % message['snippet'])
         msg_str = base64.urlsafe_b64decode(message['raw'].encode("utf-8")).decode("utf-8")
         mime_msg = email.message_from_string(msg_str)
 
         ret_email = mime_msg.get_payload(decode=True).decode()#''
-        
+        #print(ret_email)
         return ret_email
 
     except Exception as error:
         print('An error occurred: %s' % error)
-
 
 
 def process_emails(msg_html_bodies):
@@ -164,42 +160,57 @@ def process_emails(msg_html_bodies):
         html_table = msg_html_bodies[i]
         # fix HTML
         soup = BeautifulSoup(html_table, "html.parser")
-        # specific to the HTML table in your email
+        
+        
         for table in soup.findChildren(attrs={'style': 'bordercolor="#cccccc"'}): 
+            print(table.contents)
             for c in table.children:
-                if c.name in ['tbody', 'thead']:
-                    c.unwrap()
+                for z in c.findChildren(attrs={'style': 'background-color:whitesmoke'}):
+                    z.unrwap()
+                #if c.name in ['tbody', 'thead']:
+                #    c.unwrap()
         df = pd.read_html(str(soup), flavor="bs4")
-        t = df[0]
+        
+        df = df[0]
+
         start_end = []
         in_table = False
-        for i in range(len(t)):    
-            isN = pd.isnull(t.iloc[[i], 0]).values[0]    
-            curr_t = t.iloc[[i], 0].values[0]
-            
-            if (curr_t == "TIME (CT)"):       
-                current_start = i
+        for i in range(len(df)):    
+            isN = pd.isnull(df.iloc[[i], 0]).values[0]    
+            curr_t = df.iloc[[i], 0].values[0]
+
+            if (curr_t == 'BLOCK TRADES'):       
+                current_start = i+1
+                current_header = df.iloc[i-1,0]        
                 in_table = True
             if (isN) & (in_table == True):        
-                start_end.append([current_start, i])
+                start_end.append([current_header, [current_start, i]])
                 in_table = False
+        tble_dfs = []        
         
-        tble_dfs = []
-        for j in start_end:
-            tble_dfs.append(t.iloc[j[0]:j[1],:].copy())
-        tble_dfs[0].rename(columns={0:'TIME (CT)', 1: '1', 2: 'PRODUCT', 3: 'SYM', 4: 'B/S', 5: 'QTY', 6: 'STRIKE', 7: 'TYPE', 8: 'PRICE'}, inplace=True)
-        sm_table_cleaned = tble_dfs[0].iloc[1:, [0,2,3,4,5,6,7,8]].copy()
-        sm_table_cleaned.reset_index(drop=True, inplace=True)
-        sm_table_cleaned.iloc[:,3] = sm_table_cleaned.iloc[:,3].apply(str)
-        sm_table_cleaned.iloc[:,3] = sm_table_cleaned.iloc[:,3].str.replace('nan', '-')
+        for x in start_end:
+            tit = x[0]
+            j = x[1]
+            #tble_dfs.append([x[0],df.iloc[j[0]:j[1],:].copy()])
+            dfff = df.iloc[j[0]:j[1],:].copy()
+            dfff.rename(columns={0:'TIME (CT)', 1: '1', 2: 'PRODUCT', 3: 'SYM', 4: 'B/S', 5: 'QTY', 6: 'STRIKE', 7: 'TYPE', 8: 'PRICE'}, inplace=True)
+            sm_table_cleaned = dfff.iloc[1:, [0,2,3,4,5,6,7,8]].copy()
+            sm_table_cleaned.reset_index(drop=True, inplace=True)
+            sm_table_cleaned.iloc[:,3] = sm_table_cleaned.iloc[:,3].apply(str)
+            sm_table_cleaned.iloc[:,3] = sm_table_cleaned.iloc[:,3].str.replace('nan', '-')
 
-        sm_table_cleaned.iloc[:,5] = sm_table_cleaned.iloc[:,5].apply(str)
-        sm_table_cleaned.iloc[:,5] = sm_table_cleaned.iloc[:,5].str.replace('nan', '-')
-                
-        yield(sm_table_cleaned)
+            #sm_table_cleaned.iloc[:,7] = sm_table_cleaned.iloc[:,7].apply(float)
+            #sm_table_cleaned.iloc[:,7] = np.round(sm_table_cleaned.iloc[:,7],3)
+
+            sm_table_cleaned.iloc[:,5] = sm_table_cleaned.iloc[:,5].apply(str)
+            sm_table_cleaned.iloc[:,5] = sm_table_cleaned.iloc[:,5].str.replace('nan', '-')
+            sm_table_cleaned.loc[-1] = [tit, '', '', '', '', '', '', '']  # adding a row (7x)
+            sm_table_cleaned.index = sm_table_cleaned.index + 1  # shifting index
+            sm_table_cleaned.sort_index(inplace=True)        
+            yield(sm_table_cleaned)
 
 
-# In[5]:
+
 if __name__ == '__main__':
     while True:
         messages = get_messages(ServicesGA, OurEmailID)
@@ -216,10 +227,11 @@ if __name__ == '__main__':
         #    print('no new unreads')
 
         gen = process_emails(msg_html_bodies)
-        for i in gen:
+        
+        #print(msg_html_bodies)
+        
+        
+        for i in gen:                        
             r.publish('tradingview', zlib.compress(pickle.dumps(i)))
             print((tabulate(i, headers='keys', tablefmt='psql', showindex=False, numalign="right")))
         time.sleep(10)
-
-
-
